@@ -6,7 +6,7 @@
 -module(sl).
 -export([start/0, start/1, stop/1, getopt/2, getopts/2, setopt/3, setopts/2,
          open/1, open/2, connect/1, disconnect/1, close/1, revert/1,
-         update/1, send/2]).
+         update/1, send/2, options/0]).
 
 -define(SL_CONNECT,    1).
 -define(SL_DISCONNECT, 2).
