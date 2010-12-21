@@ -4,7 +4,9 @@
 %%% Created :  7 Oct 2002 by Tony Rogvall <tony@a55.hemma.se>
 
 -module(sl).
-
+-export([start/0, start/1, stop/1, getopt/2, getopts/2, setopt/3, setopts/2,
+         open/1, open/2, connect/1, disconnect/1, close/1, revert/1,
+         update/1, send/2]).
 
 -define(SL_CONNECT,    1).
 -define(SL_DISCONNECT, 2).
@@ -59,8 +61,6 @@
 
 -define(SL_MODE_RAW,    0).
 -define(SL_MODE_LINE,   1).
-
--compile(export_all).
 
 start() ->
     start([]).
