@@ -1,4 +1,0 @@
-# This file stops erlang
-#! /bin/bash
-cd /opt/erlang_apps/swarm/ebin
-erl -s start_app remote_stop myapp -sname myapp_killer

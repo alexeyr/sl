@@ -1,5 +1,0 @@
-#!/bin/sh
-
-jerl -s pico_test batch foo
-
-

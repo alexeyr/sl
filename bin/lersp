@@ -1,6 +1,0 @@
-#!/bin/sh
-#
-# Run the Lersp interpreter.
-
-jerl -noshell -s lersp repl
-

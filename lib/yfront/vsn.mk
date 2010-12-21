@@ -1,1 +1,0 @@
-YFRONT_VSN=0.5

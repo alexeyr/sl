@@ -1,7 +1,0 @@
-<erl>
-out(A) ->
-    {ok, Bin} = js:prototype_js(),
-    {ehtml,
-     [{pre_html, binary_to_list(Bin)}]}.
-
-</erl>

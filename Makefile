@@ -1,22 +1,31 @@
-all: conf
-	(cd lib; $(MAKE) $@)
+REBAR=./rebar
+REBAR_COMPILE=$(REBAR) get-deps compile
+PLT=dialyzer/sl.plt
+
+all: compile
+
+compile:
+	$(REBAR_COMPILE)
+
+test:
+	$(REBAR_COMPILE) eunit
 
 clean:
-	(cd lib; $(MAKE) $@)
+	-rm -rf deps ebin/* priv/* doc/* .eunit c_src/*.o
 
-$(LIBS): conf $(MK_INCLUDE)
-# Build a program, unless it has a file called SKIP in its top directory
-	if [ ! -f lib/$@/SKIP ]; then (cd lib/$@; $(MAKE) all); fi
+docs:
+	$(REBAR_COMPILE) doc
 
-$(MK_INCLUDE): $(MK_INCLUDE).in
-	$(MAKE) conf
+static:
+	$(REBAR_COMPILE)
+ifeq ($(wildcard $(PLT)),)
+	dialyzer --build_plt --apps kernel stdlib erts --output_plt $(PLT) 
+else
+	mkdir -p dyalyzer
+	dialyzer --plt $(PLT) -r ebin
+endif
 
-conf:
-	(cd config; $(MAKE))
+cross_compile: clean
+	$(REBAR_COMPILE) -C rebar.cross_compile.config
 
-conf_clean:
-	(cd config; $(MAKE) clean)
-
-config/configure: config/configure.in
-	(cd config; autoconf)
-
+.PHONY: all compile test clean docs static cross_compile

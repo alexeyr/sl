@@ -1,2 +1,0 @@
-{release, {"proc_reg","1.0"},
- [kernel, stdlib, sasl]}.

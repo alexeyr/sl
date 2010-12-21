@@ -1,3 +1,0 @@
-
-include ../../support/subdir.mk
-

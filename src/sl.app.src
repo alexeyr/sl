@@ -1,0 +1,9 @@
+{application, sl,
+ [
+  {description, "Serial driver for Windows and Unix."},
+  {vsn, "1.0"},
+  {modules, []},
+  {registered, []},
+  {applications, [kernel, stdlib]},
+  {env, []}
+ ]}.

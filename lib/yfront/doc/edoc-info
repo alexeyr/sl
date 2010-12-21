@@ -1,3 +1,0 @@
-{application,yfront}.
-{packages,[]}.
-{modules,[wblog,wraplog,yfront,ymnesia]}.

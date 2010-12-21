@@ -1,1 +1,0 @@
-Small driver for POSIX functions not normally supported by the Erlang runtime system.

@@ -1,5 +1,0 @@
-echo "==================="
-echo "COMPILING COMPILERS"
-echo "==================="
-cd /opt/myapp/
-/usr/local/lib/erlang/bin/erlc ../src/compile_code.erl

@@ -1,0 +1,17 @@
+*.plt
+.svn
+*/.svn
+*.db
+*.swp
+*~
+erl_crash.dump
+*.o
+.eunit
+*.orig
+ebin
+priv
+TEST*.xml
+*.exp
+*.lib
+*.obj
+*.dll

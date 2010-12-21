@@ -1,6 +1,0 @@
-{application,xmerl,
- [{description,"XML parser"},
-  {vsn,"%VSN%"},
-  {modules,[
-	]},
-  ]}.

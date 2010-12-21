@@ -1,2 +1,0 @@
-#!/bin/sh
-erl -noshell -pa "/home/joe/erl/www_tools" -s html_expand dir -s erlang halt
