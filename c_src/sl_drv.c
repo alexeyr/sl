@@ -26,6 +26,8 @@ typedef HANDLE  com_t;
 
 #else
 
+#define HAVE_SYS_UIO_H
+
 #include <stdio.h>
 #include <termios.h>
 #include <fcntl.h>
@@ -34,6 +36,10 @@ typedef HANDLE  com_t;
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
+#include <sys/uio.h>
+#include <string.h>
+#include <ctype.h>
 
 #include "erl_driver.h"
 
@@ -48,7 +54,6 @@ typedef int     com_t;
 #endif
 
 #endif
-
 
 /* Standard set of integer macros  .. */
 
@@ -300,7 +305,7 @@ typedef struct _sl_t {
 } sl_t;
 
 static ErlDrvEntry sl_entry;
-static ErlDrvData sl_start(ErlDrvPort port, char *buf);
+static ErlDrvData sl_start(ErlDrvPort port, char* buf);
 static void sl_stop(ErlDrvData drv_data);
 static void sl_output(ErlDrvData drv_data,  char* buf, int len);
 static void sl_ready_input(ErlDrvData drv_data, ErlDrvEvent event); 
@@ -866,43 +871,7 @@ static void do_update(sl_t* slp) {
     slp->flags = 0;
 }
 
-/* initiate a read operation */
-static int do_read(sl_t* slp) {
-    DWORD n;
-
-    if ((slp->com == INVALID) || slp->ipending)
-        return -1;
-
-    if ((slp->ibuf == NULL) || (slp->bufsz > slp->ilen)) {
-        slp->ibuf = driver_realloc(slp->ibuf, slp->bufsz);
-        slp->ilen = slp->bufsz;
-    }
-#ifdef __WIN32__
-    if (!ReadFile(slp->com, slp->ibuf, slp->bufsz, &n, &slp->in)) {
-        if (GetLastError() == ERROR_IO_PENDING) {
-            slp->ipending = 1;
-            driver_select(slp->port,(ErlDrvEvent)slp->in.hEvent, DO_READ, 1);
-            return 0;
-        }
-        return -1;
-    }
-    driver_output(slp->com, slp->ibuf, n);
-    return n;
-#else
-    if ((n = read(slp->com, slp->ibuf, slp->bufsz)) > 0) {
-        driver_output(slp->port, slp->ibuf, n);
-        return n;
-    }
-    else if ((n < 0) && (errno == EAGAIN)) {
-        driver_select(slp->port, (ErlDrvEvent)slp->com, DO_READ, 1);
-        return 0;
-    }
-    return n;
-#endif
-}
-
-
-static int do_write_buf(sl_t*slp, char* buf, int len) {
+static int do_write_buf(sl_t* slp, char* buf, int len) {
     DWORD n;
 #ifdef __WIN32__
     if (!WriteFile(slp->com, buf, len, &n, &slp->out)) {
@@ -947,7 +916,7 @@ static int do_write_more(sl_t* slp) {
     int count;
 
     if ((vector = driver_peekq(slp->port, &count)) != NULL) {
-        int n = writev(slp->com, vector, count);
+        int n = writev(slp->com, (const SysIOVec*) vector, count);
         if (n > 0)
             driver_deq(slp->port, n);
         if (driver_sizeq(slp->port) == 0)
@@ -1128,9 +1097,8 @@ static int ctl_reply_string(char* str, char** rbuf, int rsize) {
 }
 
 
-static ErlDrvData sl_start(ErlDrvPort port, char *buf) {
-    sl_t *slp = (sl_t*) driver_alloc(sizeof (sl_t));
-    struct termios* tp;
+static ErlDrvData sl_start(ErlDrvPort port, char* buf) {
+    sl_t* slp = (sl_t*) driver_alloc(sizeof (sl_t));
 
     if (slp == NULL)
         return (ErlDrvData) -1;

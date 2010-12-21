@@ -69,7 +69,7 @@ start(OpenOpts) ->
     erl_ddll:load_driver(code:priv_dir(sl), "sl_drv"),
     open_port({spawn, "sl_drv"}, OpenOpts).
 
-stop(P) when port(P) ->
+stop(P) when is_port(P) ->
     erlang:port_close(P).
 
 options() ->
@@ -81,9 +81,9 @@ options() ->
 getopts(P, [Opt|Opts]) ->
     case getopt(P, Opt) of
         {ok, Val} -> [{Opt,Val} | getopts(P, Opts)];
-        Error -> getopts(P, Opts)
+        _Error -> getopts(P, Opts)
     end;
-getopts(P, []) -> [].
+getopts(_P, []) -> [].
 
 
 getopt(P, Opt) ->
@@ -130,7 +130,7 @@ setopt(P, Opt, Arg) ->
         echo   -> reply0(erlang:port_control(P, ?SL_SET_ECHO, bool(Arg)));
         binary -> ok;
         mode   ->
-            if integer(Arg) ->
+            if is_integer(Arg) ->
                    reply0(erlang:port_control(P, ?SL_SET_MODE,<<Arg:32>>));
                Arg==raw -> 
                    reply0(erlang:port_control(P, ?SL_SET_MODE, 
@@ -142,7 +142,7 @@ setopt(P, Opt, Arg) ->
         _ -> {error, {bad_opt,Opt}}
     end.
 
-setopts(P, []) -> ok;
+setopts(_P, []) -> ok;
 setopts(P, Opts) -> 
     case catch setopts0(P, Opts) of
         ok -> update(P);
@@ -154,7 +154,7 @@ setopts0(P, [{Opt,Arg}|Opts]) ->
         ok -> setopts0(P, Opts);
         Error -> Error
     end;
-setopts0(P, []) -> ok.
+setopts0(_P, []) -> ok.
 
 
 open(Dev, Opts) ->
@@ -205,25 +205,15 @@ send(P, Data) ->
 bool(true) ->  <<1:32>>;
 bool(false) -> <<0:32>>.
 
-reply0(R) when list(R)   -> reply(list_to_binary(R));
-reply0(R) when binary(R) -> reply(R).
+reply0(R) -> reply(iolist_to_binary(R)).
 
 reply(<<?SL_OK>>) -> ok;
-reply(<<?SL_OK,?SL_STRING,Str/binary>>) -> {ok,binary_to_list(Str)};
-reply(<<?SL_OK,?SL_INT, I0:32>>) -> {ok, I0};
-reply(<<?SL_OK,?SL_INT, I0:32, Tail/binary>>) ->{ok, [I0|intlist(Tail)]};
-reply(<<?SL_OK,?SL_BOOL, 0>>) -> {ok,false};
-reply(<<?SL_OK,?SL_BOOL, _>>) -> {ok,true};
+reply(<<?SL_OK, ?SL_STRING, Str/binary>>) -> {ok,binary_to_list(Str)};
+reply(<<?SL_OK, ?SL_INT, I0:32>>) -> {ok, I0};
+reply(<<?SL_OK, ?SL_INT, I0:32, Tail/binary>>) ->{ok, [I0|intlist(Tail)]};
+reply(<<?SL_OK, ?SL_BOOL, 0>>) -> {ok,false};
+reply(<<?SL_OK, ?SL_BOOL, _>>) -> {ok,true};
 reply(<<?SL_ERROR, Err/binary>>) -> {error, list_to_atom(binary_to_list(Err))}.
 
 intlist(<<I:32, Tail/binary>>) -> [I | intlist(Tail)];
 intlist(<<>>) -> [].
-
-
-
-
-
-
-
-
-
