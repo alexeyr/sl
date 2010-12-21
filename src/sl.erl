@@ -80,103 +80,103 @@ options() ->
 
 getopts(P, [Opt|Opts]) ->
     case getopt(P, Opt) of
-	{ok, Val} -> [{Opt,Val} | getopts(P, Opts)];
-	Error -> getopts(P, Opts)
+        {ok, Val} -> [{Opt,Val} | getopts(P, Opts)];
+        Error -> getopts(P, Opts)
     end;
 getopts(P, []) -> [].
 
 
 getopt(P, Opt) ->
     case Opt of
-	rates  -> reply0(erlang:port_control(P, ?SL_GET_RATES, []));
-	dev    -> reply0(erlang:port_control(P, ?SL_GET_DEV, []));
-	baud   -> reply0(erlang:port_control(P, ?SL_GET_BAUD, []));
-	csize  -> reply0(erlang:port_control(P, ?SL_GET_CSIZE, []));
-	bufsz  -> reply0(erlang:port_control(P, ?SL_GET_BUFSZ, []));
-	buftm  -> reply0(erlang:port_control(P, ?SL_GET_BUFTM, []));
-	stopb  -> reply0(erlang:port_control(P, ?SL_GET_STOPB, []));
-	parity -> reply0(erlang:port_control(P, ?SL_GET_PARITY, []));
-	hwflow -> reply0(erlang:port_control(P, ?SL_GET_HWFLOW, []));
-	swflow -> reply0(erlang:port_control(P, ?SL_GET_SWFLOW, []));
-	xonchar    -> reply0(erlang:port_control(P, ?SL_GET_XONCHAR, []));
-	xoffchar   -> reply0(erlang:port_control(P, ?SL_GET_XOFFCHAR, []));
-	eolchar    -> reply0(erlang:port_control(P, ?SL_GET_EOLCHAR, []));
-	eol2char   -> reply0(erlang:port_control(P, ?SL_GET_EOL2CHAR, []));
-	echo   -> reply0(erlang:port_control(P, ?SL_GET_ECHO, []));
-	mode  ->
-	    case reply0(erlang:port_control(P, ?SL_GET_MODE, [])) of
-		{ok,?SL_MODE_RAW} -> {ok, raw};
-		{ok,?SL_MODE_LINE} -> {ok, line};
-		Other -> Other
-	    end;
-	_ -> {error, {bad_opt, Opt}}
+        rates  -> reply0(erlang:port_control(P, ?SL_GET_RATES, []));
+        dev    -> reply0(erlang:port_control(P, ?SL_GET_DEV, []));
+        baud   -> reply0(erlang:port_control(P, ?SL_GET_BAUD, []));
+        csize  -> reply0(erlang:port_control(P, ?SL_GET_CSIZE, []));
+        bufsz  -> reply0(erlang:port_control(P, ?SL_GET_BUFSZ, []));
+        buftm  -> reply0(erlang:port_control(P, ?SL_GET_BUFTM, []));
+        stopb  -> reply0(erlang:port_control(P, ?SL_GET_STOPB, []));
+        parity -> reply0(erlang:port_control(P, ?SL_GET_PARITY, []));
+        hwflow -> reply0(erlang:port_control(P, ?SL_GET_HWFLOW, []));
+        swflow -> reply0(erlang:port_control(P, ?SL_GET_SWFLOW, []));
+        xonchar    -> reply0(erlang:port_control(P, ?SL_GET_XONCHAR, []));
+        xoffchar   -> reply0(erlang:port_control(P, ?SL_GET_XOFFCHAR, []));
+        eolchar    -> reply0(erlang:port_control(P, ?SL_GET_EOLCHAR, []));
+        eol2char   -> reply0(erlang:port_control(P, ?SL_GET_EOL2CHAR, []));
+        echo   -> reply0(erlang:port_control(P, ?SL_GET_ECHO, []));
+        mode  ->
+            case reply0(erlang:port_control(P, ?SL_GET_MODE, [])) of
+                {ok,?SL_MODE_RAW} -> {ok, raw};
+                {ok,?SL_MODE_LINE} -> {ok, line};
+                Other -> Other
+            end;
+        _ -> {error, {bad_opt, Opt}}
     end.
-    
+
 setopt(P, Opt, Arg) ->
     case Opt of
-	dev    -> reply0(erlang:port_control(P, ?SL_SET_DEV, Arg));    
-	baud   -> reply0(erlang:port_control(P, ?SL_SET_BAUD, <<Arg:32>>));
-	csize  -> reply0(erlang:port_control(P, ?SL_SET_CSIZE, <<Arg:32>>));
-	bufsz  -> reply0(erlang:port_control(P, ?SL_SET_BUFSZ, <<Arg:32>>));
-	buftm  -> reply0(erlang:port_control(P, ?SL_SET_BUFTM, <<Arg:32>>));
-	stopb  -> reply0(erlang:port_control(P, ?SL_SET_STOPB, <<Arg:32>>));
-	parity -> reply0(erlang:port_control(P, ?SL_SET_PARITY, <<Arg:32>>));
-	hwflow -> reply0(erlang:port_control(P, ?SL_SET_HWFLOW, bool(Arg)));
-	swflow -> reply0(erlang:port_control(P, ?SL_SET_SWFLOW, bool(Arg)));
-	xoffchar -> reply0(erlang:port_control(P, ?SL_SET_XOFFCHAR, <<Arg:32>> ));
-	xonchar  -> reply0(erlang:port_control(P, ?SL_SET_XONCHAR, <<Arg:32>>));
-	eolchar -> reply0(erlang:port_control(P,?SL_SET_EOLCHAR,<<Arg:32>>));
-	eol2char -> reply0(erlang:port_control(P,?SL_SET_EOL2CHAR,<<Arg:32>>));
-	echo   -> reply0(erlang:port_control(P, ?SL_SET_ECHO, bool(Arg)));
-	binary -> ok;
-	mode   ->
-	    if integer(Arg) ->
-		    reply0(erlang:port_control(P, ?SL_SET_MODE,<<Arg:32>>));
-		Arg==raw -> 
-		    reply0(erlang:port_control(P, ?SL_SET_MODE, 
-					       <<?SL_MODE_RAW:32>>));
-		Arg==line ->
-		    reply0(erlang:port_control(P, ?SL_SET_MODE, 
-					       << ?SL_MODE_LINE:32 >>))
+        dev    -> reply0(erlang:port_control(P, ?SL_SET_DEV, Arg));    
+        baud   -> reply0(erlang:port_control(P, ?SL_SET_BAUD, <<Arg:32>>));
+        csize  -> reply0(erlang:port_control(P, ?SL_SET_CSIZE, <<Arg:32>>));
+        bufsz  -> reply0(erlang:port_control(P, ?SL_SET_BUFSZ, <<Arg:32>>));
+        buftm  -> reply0(erlang:port_control(P, ?SL_SET_BUFTM, <<Arg:32>>));
+        stopb  -> reply0(erlang:port_control(P, ?SL_SET_STOPB, <<Arg:32>>));
+        parity -> reply0(erlang:port_control(P, ?SL_SET_PARITY, <<Arg:32>>));
+        hwflow -> reply0(erlang:port_control(P, ?SL_SET_HWFLOW, bool(Arg)));
+        swflow -> reply0(erlang:port_control(P, ?SL_SET_SWFLOW, bool(Arg)));
+        xoffchar -> reply0(erlang:port_control(P, ?SL_SET_XOFFCHAR, <<Arg:32>> ));
+        xonchar  -> reply0(erlang:port_control(P, ?SL_SET_XONCHAR, <<Arg:32>>));
+        eolchar -> reply0(erlang:port_control(P,?SL_SET_EOLCHAR,<<Arg:32>>));
+        eol2char -> reply0(erlang:port_control(P,?SL_SET_EOL2CHAR,<<Arg:32>>));
+        echo   -> reply0(erlang:port_control(P, ?SL_SET_ECHO, bool(Arg)));
+        binary -> ok;
+        mode   ->
+            if integer(Arg) ->
+                   reply0(erlang:port_control(P, ?SL_SET_MODE,<<Arg:32>>));
+               Arg==raw -> 
+                   reply0(erlang:port_control(P, ?SL_SET_MODE, 
+                                              <<?SL_MODE_RAW:32>>));
+               Arg==line ->
+                   reply0(erlang:port_control(P, ?SL_SET_MODE, 
+                                              << ?SL_MODE_LINE:32 >>))
             end;
-	_ -> {error, {bad_opt,Opt}}
+        _ -> {error, {bad_opt,Opt}}
     end.
 
 setopts(P, []) -> ok;
 setopts(P, Opts) -> 
     case catch setopts0(P, Opts) of
-	ok -> update(P);
-	Error -> revert(P), Error
+        ok -> update(P);
+        Error -> revert(P), Error
     end.
 
 setopts0(P, [{Opt,Arg}|Opts]) ->
     case setopt(P, Opt, Arg) of
-	ok -> setopts0(P, Opts);
-	Error -> Error
+        ok -> setopts0(P, Opts);
+        Error -> Error
     end;
 setopts0(P, []) -> ok.
 
-	    
+
 open(Dev, Opts) ->
     PortOpts = case lists:keysearch(binary, 1, Opts) of
-		   {value, {_, true}} -> [binary];
-		   _ -> []
-	       end,
+                   {value, {_, true}} -> [binary];
+                   _ -> []
+               end,
     P = start(PortOpts),
     case setopt(P, dev, Dev) of
-	ok ->
-	    case open(P) of
-		ok -> 
-		    case setopts(P, Opts) of
-			ok -> {ok,P};
-			Error -> stop(P), Error
-		    end;
-		Error ->
-		    stop(P), Error
-	    end;
-	Error ->
-	    stop(P),
-	    Error
+        ok ->
+            case open(P) of
+                ok -> 
+                    case setopts(P, Opts) of
+                        ok -> {ok,P};
+                        Error -> stop(P), Error
+                    end;
+                Error ->
+                    stop(P), Error
+            end;
+        Error ->
+            stop(P),
+            Error
     end.
 
 open(P) ->
@@ -219,10 +219,10 @@ reply(<<?SL_ERROR, Err/binary>>) -> {error, list_to_atom(binary_to_list(Err))}.
 intlist(<<I:32, Tail/binary>>) -> [I | intlist(Tail)];
 intlist(<<>>) -> [].
 
-	
 
 
-	
+
+
 
 
 

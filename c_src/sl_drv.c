@@ -5,6 +5,10 @@
  *
  */
 
+#ifdef _WIN32
+#define __WIN32__
+#endif
+
 #ifdef __WIN32__
 
 #include <stdio.h>
@@ -61,12 +65,10 @@ typedef int     com_t;
 #define get_int16(s) ((((unsigned char*)  (s))[0] << 8) | \
                       (((unsigned char*)  (s))[1]))
 
-
 #define put_int16(i, s) {((unsigned char*)(s))[0] = ((i) >> 8) & 0xff; \
                         ((unsigned char*)(s))[1] = (i)         & 0xff;}
 
 #define get_int8(s) ((((unsigned char*)  (s))[0] ))
-
 
 #define put_int8(i, s) { ((unsigned char*)(s))[0] = (i)         & 0xff;}
 
@@ -137,16 +139,16 @@ static struct _rate {
     {115200,  B115200 },
 #endif
 #ifdef B153600
-    {153600,  B153600 }, 	
+    {153600,  B153600 },
 #endif
 #ifdef B230400
-    {230400,  B230400 }, 	
+    {230400,  B230400 },
 #endif
 #ifdef B307200
-    {307200,  B307200 }, 	
+    {307200,  B307200 },
 #endif
 #ifdef B460800
-    {460800,  B460800 }, 	
+    {460800,  B460800 },
 #endif
 #ifdef B500000
     {500000,  B500000 },
@@ -261,8 +263,7 @@ static struct _rate {
 #define FL_EOL2CHAR    0x2000
 #define FL_MODE        0x8000  /* mode update */
 
-typedef struct _sl_t
-{
+typedef struct _sl_t {
     ErlDrvPort port;
     com_t      com;       /* Connection handle */
     int        ilen;     /* length of input buffer */
@@ -305,90 +306,85 @@ static void sl_output(ErlDrvData drv_data,  char* buf, int len);
 static void sl_ready_input(ErlDrvData drv_data, ErlDrvEvent event); 
 static void sl_ready_output(ErlDrvData drv_data, ErlDrvEvent event);
 
-static unsigned int to_speed(int baud)
-{
+static unsigned int to_speed(int baud) {
     int i = 0;
     int speed = 0;
 
     while((rtab[i].baud != -1) && (baud > rtab[i].baud))
-	i++;
+        i++;
     if (rtab[i].baud == -1)
-	speed = rtab[i-1].speed;
-    else 
-	speed = rtab[i].speed;
+        speed = rtab[i-1].speed;
+    else
+        speed = rtab[i].speed;
     /* fprintf(stderr, "to_speed: baud=%d, speed=%d\n", baud, speed); */
     return speed;
 }
 
-static int from_speed(unsigned int speed)
-{
+static int from_speed(unsigned int speed) {
     int i = 0;
     int baud;
 
     while((rtab[i].baud != -1) && (rtab[i].speed != speed))
-	i++;
+        i++;
     baud = rtab[i].baud;
     /* fprintf(stderr, "from_speed: speed=%d, baud=%d\n", speed, baud);  */
     return baud;
 }
 
 
-static int get_com_state(sl_t* slp)
-{
+static int get_com_state(sl_t* slp) {
 #ifdef __WIN32__
     if (!GetCommState(slp->com, &slp->tio)) {
-	DEBUGF("GetCommState: error %d", GetLastError());
-	return -1;
+        DEBUGF("GetCommState: error %d", GetLastError());
+        return -1;
     }
     return 0;
 #else
     int res;
     if ((res = tcgetattr(slp->com, &slp->tio)) < 0) {
-	DEBUGF("tcgetattr: error %s", strerror(errno));
+        DEBUGF("tcgetattr: error %s", strerror(errno));
     }
     return res;
 #endif
 }
 
-static int set_com_state(sl_t* slp)
-{
+static int set_com_state(sl_t* slp) {
 #ifdef __WIN32__
     slp->tio.DCBlength = sizeof(DCB);
     if (!SetCommState(slp->com, &slp->tio)) {
-	DEBUGF("SetCommState: error %d", GetLastError());
-	return -1;
+        DEBUGF("SetCommState: error %d", GetLastError());
+        return -1;
     }
     return 0;
 #else
     int res;
 
     if ((res = tcsetattr(slp->com, TCSAFLUSH, &slp->tio)) < 0) {
-	DEBUGF("tcsetattr: error %s", strerror(errno));
+        DEBUGF("tcsetattr: error %s", strerror(errno));
     }
     return res;
 #endif
 }
 
-static void set_raw_mode(sl_t* slp)
-{
+static void set_raw_mode(sl_t* slp) {
 #ifdef __WIN32__
     slp->tio.fBinary = TRUE;
 #else
     slp->tio.c_iflag &= ~(ICRNL |    /* disable CR-to-NL mapping */
-			  INLCR |    /* disable NL-to-CR mapping */
-			  IGNCR |    /* disable ignore CR */
-			  ISTRIP |   /* disable stripping of eighth bit */
-			  BRKINT |   /* disable generate SIGINT on brk */
-			  IGNPAR |
-			  IGNBRK |
-			  INPCK);    /* disable input parity detection */
+                          INLCR |    /* disable NL-to-CR mapping */
+                          IGNCR |    /* disable ignore CR */
+                          ISTRIP |   /* disable stripping of eighth bit */
+                          BRKINT |   /* disable generate SIGINT on brk */
+                          IGNPAR |
+                          IGNBRK |
+                          INPCK);    /* disable input parity detection */
 
     slp->tio.c_lflag &= ~(ECHOE |    /* disable visual erase */
-			  ECHOK |    /* disable echo newline after kill */
-			  ECHOKE |   /* disable visual kill with bs-sp-bs */
-			  ECHONL |   /* disable echo nl when echo off */
-			  ISIG |     /* disable tty-generated signals */
-			  IEXTEN);   /* disable extended input processing */
+                          ECHOK |    /* disable echo newline after kill */
+                          ECHOKE |   /* disable visual kill with bs-sp-bs */
+                          ECHONL |   /* disable echo nl when echo off */
+                          ISIG |     /* disable tty-generated signals */
+                          IEXTEN);   /* disable extended input processing */
 
     slp->tio.c_lflag &= ~ICANON;    /* enable non-canonical mode */
 
@@ -400,26 +396,25 @@ static void set_raw_mode(sl_t* slp)
     slp->cmode = SL_MODE_RAW;
 }
 
-static void set_line_mode(sl_t* slp)
-{
+static void set_line_mode(sl_t* slp) {
 #ifdef __WIN32__
     slp->tio.fBinary = TRUE;
 #else
     slp->tio.c_iflag &= ~(ICRNL |    /* disable CR-to-NL mapping */
-			  INLCR |    /* disable NL-to-CR mapping */
-			  IGNCR |    /* disable ignore CR */
-			  ISTRIP |   /* disable stripping of eighth bit */
-			  BRKINT |   /* disable generate SIGINT on brk */
-			  IGNPAR |
-			  IGNBRK |
-			  INPCK);    /* disable input parity detection */
+                          INLCR |    /* disable NL-to-CR mapping */
+                          IGNCR |    /* disable ignore CR */
+                          ISTRIP |   /* disable stripping of eighth bit */
+                          BRKINT |   /* disable generate SIGINT on brk */
+                          IGNPAR |
+                          IGNBRK |
+                          INPCK);    /* disable input parity detection */
 
     slp->tio.c_lflag &= ~(ECHOE |    /* disable visual erase */
-			  ECHOK |    /* disable echo newline after kill */
-			  ECHOKE |   /* disable visual kill with bs-sp-bs */
-			  ECHONL |   /* disable echo nl when echo off */
-			  ISIG |     /* disable tty-generated signals */
-			  IEXTEN);   /* disable extended input processing */
+                          ECHOK |    /* disable echo newline after kill */
+                          ECHOKE |   /* disable visual kill with bs-sp-bs */
+                          ECHONL |   /* disable echo nl when echo off */
+                          ISIG |     /* disable tty-generated signals */
+                          IEXTEN);   /* disable extended input processing */
 
     slp->tio.c_lflag |= ICANON;      /* enable canonical mode */
 
@@ -456,8 +451,7 @@ static void set_line_mode(sl_t* slp)
 
 
 
-static void set_baud(sl_t* slp, int baud)
-{
+static void set_baud(sl_t* slp, int baud) {
 #ifdef __WIN32__
     slp->tio.BaudRate = to_speed(baud);
 #else
@@ -467,8 +461,7 @@ static void set_baud(sl_t* slp, int baud)
 #endif
 }
 
-static int get_baud(sl_t* slp)
-{
+static int get_baud(sl_t* slp) {
 #ifdef __WIN32__
     return from_speed(slp->tio.BaudRate);
 #else
@@ -477,112 +470,107 @@ static int get_baud(sl_t* slp)
 }
 
 
-static void set_parity(sl_t* slp, int parity)
-{
+static void set_parity(sl_t* slp, int parity) {
 #ifdef __WIN32__
     switch(parity) {
-    case 0: 
-	slp->tio.fParity = FALSE;
-	slp->tio.Parity = NOPARITY; 
-	break;
-    case 1: 
-	slp->tio.fParity = TRUE;
-	slp->tio.Parity = ODDPARITY; 
-	break;
-    case 2: 
-	slp->tio.fParity = TRUE;
-	slp->tio.Parity = EVENPARITY; 
-	break;
-    case 3: 
-	slp->tio.fParity = TRUE;
-	slp->tio.Parity = MARKPARITY; 
-	break;
+    case 0:
+        slp->tio.fParity = FALSE;
+        slp->tio.Parity = NOPARITY;
+        break;
+    case 1:
+        slp->tio.fParity = TRUE;
+        slp->tio.Parity = ODDPARITY;
+        break;
+    case 2:
+        slp->tio.fParity = TRUE;
+        slp->tio.Parity = EVENPARITY;
+        break;
+    case 3:
+        slp->tio.fParity = TRUE;
+        slp->tio.Parity = MARKPARITY;
+        break;
     }
 #else
     switch(parity) {
     case 0: /* none */
-	slp->tio.c_iflag &= ~PARMRK;
-	slp->tio.c_cflag &= ~PARENB;
-	break;
+        slp->tio.c_iflag &= ~PARMRK;
+        slp->tio.c_cflag &= ~PARENB;
+        break;
     case 1: /* odd */
-	slp->tio.c_iflag &= ~PARMRK;
-	slp->tio.c_cflag  |= PARODD;
-	slp->tio.c_cflag |= PARENB;
-	break;
+        slp->tio.c_iflag &= ~PARMRK;
+        slp->tio.c_cflag  |= PARODD;
+        slp->tio.c_cflag |= PARENB;
+        break;
     case 2: /* even */
-	slp->tio.c_iflag &= ~PARMRK;
-	slp->tio.c_cflag &= ~PARODD;
-	slp->tio.c_cflag |= PARENB;
-	break;
+        slp->tio.c_iflag &= ~PARMRK;
+        slp->tio.c_cflag &= ~PARODD;
+        slp->tio.c_cflag |= PARENB;
+        break;
     case 3:  /* mark (FIXME) */
-	slp->tio.c_iflag |= PARMRK;
-	slp->tio.c_cflag |= PARENB;
-	break;
+        slp->tio.c_iflag |= PARMRK;
+        slp->tio.c_cflag |= PARENB;
+        break;
     }
 #endif
 }
 
 
-static int get_parity(sl_t* slp)
-{
+static int get_parity(sl_t* slp) {
 #ifdef __WIN32__
     if (slp->tio.fParity) {
-	switch (slp->tio.Parity) {
-	case NOPARITY: return 0;
-	case ODDPARITY: return 1;
-	case EVENPARITY: return 2;
-	case MARKPARITY: return 3;
-	}
+        switch (slp->tio.Parity) {
+        case NOPARITY: return 0;
+        case ODDPARITY: return 1;
+        case EVENPARITY: return 2;
+        case MARKPARITY: return 3;
+        }
     }
     return 0;
 #else
     if (slp->tio.c_cflag & PARENB) {
-	if (slp->tio.c_iflag & PARMRK)
-	    return 3;
-	else if (slp->tio.c_cflag & PARODD)
-	    return 1;
-	else
-	    return 2;
+        if (slp->tio.c_iflag & PARMRK)
+            return 3;
+        else if (slp->tio.c_cflag & PARODD)
+            return 1;
+        else
+            return 2;
     }
     return 0;
 #endif
 }
 
-static void set_stopb(sl_t* slp, int stopb)
-{
+static void set_stopb(sl_t* slp, int stopb) {
 #ifdef __WIN32__
     if (stopb == 1)
-	slp->tio.StopBits = ONESTOPBIT;
+        slp->tio.StopBits = ONESTOPBIT;
     else if (stopb == 2)
-	slp->tio.StopBits = TWOSTOPBITS;
+        slp->tio.StopBits = TWOSTOPBITS;
 #else
     if (stopb == 1)
-	slp->tio.c_cflag &= ~CSTOPB;
+        slp->tio.c_cflag &= ~CSTOPB;
     else if (stopb == 2)
-	slp->tio.c_cflag |= CSTOPB;
+        slp->tio.c_cflag |= CSTOPB;
 #endif
 }
 
-static int get_stopb(sl_t* slp)
-{
+static int get_stopb(sl_t* slp) {
 #ifdef __WIN32__
     if (slp->tio.StopBits == ONESTOPBIT)
-	return 1;
+        return 1;
     else if (slp->tio.StopBits = TWOSTOPBITS)
-	return 2;
+        return 2;
     else
-	return -1;
+        return -1;
 #else
     if (slp->tio.c_cflag & CSTOPB)
-	return 2;
+        return 2;
     else
-	return 1;
+        return 1;
 #endif
 }
 
 
-static void set_csize(sl_t* slp, int csize)
-{
+static void set_csize(sl_t* slp, int csize) {
 #ifdef __WIN32__
     slp->tio.ByteSize = csize;
 #else
@@ -596,8 +584,7 @@ static void set_csize(sl_t* slp, int csize)
 #endif
 }
 
-static int get_csize(sl_t* slp)
-{
+static int get_csize(sl_t* slp) {
 #ifdef __WIN32__
     return slp->tio.ByteSize;
 #else
@@ -612,8 +599,7 @@ static int get_csize(sl_t* slp)
 }
 
 /* set minimum buffer size */
-static void set_bufsz(sl_t* slp, int bufsz)
-{
+static void set_bufsz(sl_t* slp, int bufsz) {
 #ifdef __WIN32__
     /* we have to emulate this */
 #else
@@ -621,8 +607,7 @@ static void set_bufsz(sl_t* slp, int bufsz)
 #endif
 }    
 
-static int get_bufsz(sl_t* slp)
-{
+static int get_bufsz(sl_t* slp) {
 #ifdef __WIN32__
     return slp->bufsz; /* we have to emulate this */
 #else
@@ -631,8 +616,7 @@ static int get_bufsz(sl_t* slp)
 }
 
 /* set read timeout value */
-static void set_buftm(sl_t* slp, int buftm)
-{
+static void set_buftm(sl_t* slp, int buftm) {
 #ifdef __WIN32__
     /* we have to emulate this */
 #else
@@ -641,8 +625,7 @@ static void set_buftm(sl_t* slp, int buftm)
 }
 
 /* set read timeout value */
-static int get_buftm(sl_t* slp)
-{
+static int get_buftm(sl_t* slp) {
 #ifdef __WIN32__
     return slp->buftm;
 #else
@@ -650,8 +633,7 @@ static int get_buftm(sl_t* slp)
 #endif
 }
 
-static void set_xonchar(sl_t* slp, int xonchar)
-{
+static void set_xonchar(sl_t* slp, int xonchar) {
 #ifdef __WIN32__
     slp->tio.XonChar = xonchar;
 #else
@@ -659,8 +641,7 @@ static void set_xonchar(sl_t* slp, int xonchar)
 #endif
 }
 
-static int get_xonchar(sl_t* slp)
-{
+static int get_xonchar(sl_t* slp) {
 #ifdef __WIN32__
     return slp->tio.XonChar;
 #else
@@ -668,8 +649,7 @@ static int get_xonchar(sl_t* slp)
 #endif
 }
 
-static void set_xoffchar(sl_t* slp, int xoffchar)
-{
+static void set_xoffchar(sl_t* slp, int xoffchar) {
 #ifdef __WIN32__
     slp->tio.XoffChar = xoffchar;
 #else
@@ -677,8 +657,7 @@ static void set_xoffchar(sl_t* slp, int xoffchar)
 #endif
 }
 
-static int get_xoffchar(sl_t* slp)
-{
+static int get_xoffchar(sl_t* slp) {
 #ifdef __WIN32__
     return slp->tio.XoffChar;
 #else
@@ -686,8 +665,7 @@ static int get_xoffchar(sl_t* slp)
 #endif
 }
 
-static void set_eolchar(sl_t* slp, int eolchar)
-{
+static void set_eolchar(sl_t* slp, int eolchar) {
 #ifdef __WIN32__
     /* FIXME */
 #else
@@ -695,8 +673,7 @@ static void set_eolchar(sl_t* slp, int eolchar)
 #endif
 }
 
-static int get_eolchar(sl_t* slp)
-{
+static int get_eolchar(sl_t* slp) {
 #ifdef __WIN32__
     return '\r';
 #else
@@ -704,8 +681,7 @@ static int get_eolchar(sl_t* slp)
 #endif
 }
 
-static void set_eol2char(sl_t* slp, int eol2char)
-{
+static void set_eol2char(sl_t* slp, int eol2char) {
 #ifdef __WIN32__
     /* FIXME */
 #else
@@ -715,8 +691,7 @@ static void set_eol2char(sl_t* slp, int eol2char)
 #endif
 }
 
-static int get_eol2char(sl_t* slp)
-{
+static int get_eol2char(sl_t* slp) {
 #ifdef __WIN32__
     return 0;
 #else
@@ -729,20 +704,18 @@ static int get_eol2char(sl_t* slp)
 }
 
 
-static void set_swflow(sl_t* slp, int on)
-{
+static void set_swflow(sl_t* slp, int on) {
 #ifdef __WIN32__
     slp->tio.fOutX = slp->tio.fInX = on;
 #else
     if (on)
-	slp->tio.c_cflag |= (IXON | IXOFF);
+        slp->tio.c_cflag |= (IXON | IXOFF);
     else
-	slp->tio.c_cflag &= ~(IXON | IXOFF);
+        slp->tio.c_cflag &= ~(IXON | IXOFF);
 #endif
 }
 
-static int get_swflow(sl_t* slp)
-{
+static int get_swflow(sl_t* slp) {
 #ifdef __WIN32__
     return slp->tio.fOutX;
 #else
@@ -754,20 +727,18 @@ static int get_swflow(sl_t* slp)
 #endif
 }
 
-static void set_hwflow(sl_t* slp, int on)
-{
+static void set_hwflow(sl_t* slp, int on) {
 #ifdef __WIN32__
     slp->tio.fOutxCtsFlow = on;
 #else
     if (slp->hwflow)
-	slp->tio.c_cflag |= CRTSCTS;
+        slp->tio.c_cflag |= CRTSCTS;
     else
-	slp->tio.c_cflag &= ~CRTSCTS;
+        slp->tio.c_cflag &= ~CRTSCTS;
 #endif
 }
 
-static int get_hwflow(sl_t* slp)
-{
+static int get_hwflow(sl_t* slp) {
 #ifdef __WIN32__
     return slp->tio.fOutxCtsFlow;
 #else
@@ -776,20 +747,18 @@ static int get_hwflow(sl_t* slp)
 }
 
 
-static void set_echo(sl_t* slp, int on)
-{
+static void set_echo(sl_t* slp, int on) {
 #ifdef __WIN32__
     /* emulate this ??? */
 #else
     if (on)
-	slp->tio.c_lflag |= ECHO;
+        slp->tio.c_lflag |= ECHO;
     else
-	slp->tio.c_lflag &= ~ECHO;
+        slp->tio.c_lflag &= ~ECHO;
 #endif
 }
 
-static int get_echo(sl_t* slp)
-{
+static int get_echo(sl_t* slp) {
 #ifdef __WIN32__
     return 0; /* emulate this ??? */
 #else
@@ -797,105 +766,100 @@ static int get_echo(sl_t* slp)
 #endif
 }
 
-static void do_send_break(sl_t* slp)
-{
+static void do_send_break(sl_t* slp) {
     if (slp->com != INVALID) {
 #ifdef __WIN32__
     /* FIXME */
 #else
-	tcsendbreak(slp->com, 0);    
+        tcsendbreak(slp->com, 0);
 #endif
     }
 }
 
-static void do_send_xon(sl_t* slp)
-{
+static void do_send_xon(sl_t* slp) {
     if ((slp->com != INVALID) && (slp->swflow)) {
 #ifdef __WIN32__
-	/* FIXME */
+        /* FIXME */
 #else
-	tcflow(slp->com, TCION);
+        tcflow(slp->com, TCION);
 #endif
     }
 }
 
-static void do_send_xoff(sl_t* slp)
-{
+static void do_send_xoff(sl_t* slp) {
     if ((slp->com != INVALID) && (slp->swflow)) {
 #ifdef __WIN32__
-	/* FIXME */
+        /* FIXME */
 #else
-	tcflow(slp->com, TCIOFF);
+        tcflow(slp->com, TCIOFF);
 #endif
     }
 }
 
 
-static void do_close(sl_t* slp)
-{
+static void do_close(sl_t* slp) {
     if (slp->com != INVALID) {
-	driver_select(slp->port, (ErlDrvEvent)slp->com, DO_READ|DO_WRITE, 0);
+        driver_select(slp->port, (ErlDrvEvent)slp->com, DO_READ|DO_WRITE, 0);
 #ifdef __WIN32__
-	driver_select(slp->port, (ErlDrvEvent)slp->in.hEvent, DO_READ, 0);
-	driver_select(slp->port, (ErlDrvEvent)slp->out.hEvent, DO_READ, 0);
-	CloseHandle(slp->com);
+        driver_select(slp->port, (ErlDrvEvent)slp->in.hEvent, DO_READ, 0);
+        driver_select(slp->port, (ErlDrvEvent)slp->out.hEvent, DO_READ, 0);
+        CloseHandle(slp->com);
 #else
-	close(slp->com);
+        close(slp->com);
 #endif
-	slp->com = INVALID;
+        slp->com = INVALID;
     }
 }
 
-static void do_update(sl_t* slp)
-{
+static void do_update(sl_t* slp) {
     if ((slp->flags == 0) || (slp->com == INVALID))
-	return;
+        return;
 
     if (slp->flags & FL_MODE) {
-	if (slp->mode == SL_MODE_RAW)
-	    set_raw_mode(slp);
-	else if (slp->mode == SL_MODE_LINE)
-	    set_line_mode(slp);
+        if (slp->mode == SL_MODE_RAW)
+            set_raw_mode(slp);
+        else if (slp->mode == SL_MODE_LINE)
+            set_line_mode(slp);
     }
 
     if (slp->flags & FL_BAUD)
-	set_baud(slp, slp->baud);
+        set_baud(slp, slp->baud);
 
     if (slp->flags & FL_CSIZE)
-	set_csize(slp, slp->csize);
+        set_csize(slp, slp->csize);
 
     if (slp->flags & FL_STOPB)
-	set_stopb(slp, slp->stopb);
+        set_stopb(slp, slp->stopb);
 
     if (slp->flags & FL_PARITY)
-	set_parity(slp, slp->parity);
+        set_parity(slp, slp->parity);
 
     if (slp->flags & FL_BUFSZ)
-	set_bufsz(slp, slp->bufsz);
+        set_bufsz(slp, slp->bufsz);
 
     if (slp->flags & FL_BUFTM)
-	set_buftm(slp, slp->buftm);
-    
+        set_buftm(slp, slp->buftm);
+
     if (slp->flags & FL_XONCHAR)
-	set_xonchar(slp, slp->xonchar);
+        set_xonchar(slp, slp->xonchar);
 
     if (slp->flags & FL_XOFFCHAR)
-	set_xoffchar(slp, slp->xoffchar);
+        set_xoffchar(slp, slp->xoffchar);
 
     if (slp->flags & FL_EOLCHAR)
-	set_eolchar(slp, slp->eolchar);	
+        set_eolchar(slp, slp->eolchar);
 
     if (slp->flags & FL_EOL2CHAR)
-	set_eol2char(slp, slp->eol2char);
+        set_eol2char(slp, slp->eol2char);
 
     if (slp->flags & FL_HWFLOW)
-	set_hwflow(slp, slp->hwflow);
+        set_hwflow(slp, slp->hwflow);
 
     if (slp->flags & FL_SWFLOW)
-	set_swflow(slp, slp->swflow);
+        set_swflow(slp, slp->swflow);
 
     if (slp->flags & FL_ECHO)
-	set_echo(slp, slp->echo);
+        set_echo(slp, slp->echo);
 
     set_com_state(slp);
 
@@ -903,116 +867,112 @@ static void do_update(sl_t* slp)
 }
 
 /* initiate a read operation */
-static int do_read(sl_t* slp)
-{
+static int do_read(sl_t* slp) {
     DWORD n;
 
     if ((slp->com == INVALID) || slp->ipending)
-	return -1;
+        return -1;
 
     if ((slp->ibuf == NULL) || (slp->bufsz > slp->ilen)) {
-	slp->ibuf = driver_realloc(slp->ibuf, slp->bufsz);
-	slp->ilen = slp->bufsz;
-    }    
+        slp->ibuf = driver_realloc(slp->ibuf, slp->bufsz);
+        slp->ilen = slp->bufsz;
+    }
 #ifdef __WIN32__
     if (!ReadFile(slp->com, slp->ibuf, slp->bufsz, &n, &slp->in)) {
-	if (GetLastError() == ERROR_IO_PENDING) {
-	    slp->ipending = 1;
-	    driver_select(slp->port,(ErlDrvEvent)slp->in.hEvent, DO_READ, 1);
-	    return 0;
-	}
-	return -1;
+        if (GetLastError() == ERROR_IO_PENDING) {
+            slp->ipending = 1;
+            driver_select(slp->port,(ErlDrvEvent)slp->in.hEvent, DO_READ, 1);
+            return 0;
+        }
+        return -1;
     }
     driver_output(slp->com, slp->ibuf, n);
     return n;
 #else
     if ((n = read(slp->com, slp->ibuf, slp->bufsz)) > 0) {
-	driver_output(slp->port, slp->ibuf, n);
-	return n;
+        driver_output(slp->port, slp->ibuf, n);
+        return n;
     }
     else if ((n < 0) && (errno == EAGAIN)) {
-	driver_select(slp->port, (ErlDrvEvent)slp->com, DO_READ, 1);
-	return 0;
+        driver_select(slp->port, (ErlDrvEvent)slp->com, DO_READ, 1);
+        return 0;
     }
     return n;
 #endif
 }
 
 
-static int do_write_buf(sl_t*slp, char* buf, int len)
-{
+static int do_write_buf(sl_t*slp, char* buf, int len) {
     DWORD n;
 #ifdef __WIN32__
     if (!WriteFile(slp->com, buf, len, &n, &slp->out)) {
-	if (GetLastError() == ERROR_IO_PENDING) {
-	    slp->opending = 1;
-	    driver_select(slp->port, (ErlDrvEvent)slp->out.hEvent,DO_READ,1);
-	    return 0;
-	}
-	return -1;
+        if (GetLastError() == ERROR_IO_PENDING) {
+            slp->opending = 1;
+            driver_select(slp->port, (ErlDrvEvent)slp->out.hEvent,DO_READ,1);
+            return 0;
+        }
+        return -1;
     }
 #else
 
     if (((n = write(slp->com, buf, len)) < 0) && (errno == EAGAIN)) {
-	driver_enq(slp->port, buf, len);
-	driver_select(slp->port,(ErlDrvEvent)slp->com, DO_WRITE, 1);
+        driver_enq(slp->port, buf, len);
+        driver_select(slp->port,(ErlDrvEvent)slp->com, DO_WRITE, 1);
     }
     else if (n < len) {
-	driver_enq(slp->port, buf+n, len-n);
-	driver_select(slp->port,(ErlDrvEvent)slp->com, DO_WRITE, 1);
+        driver_enq(slp->port, buf+n, len-n);
+        driver_select(slp->port,(ErlDrvEvent)slp->com, DO_WRITE, 1);
     }
 #endif
 
-    return n;    
+    return n;
 }
 
-static int do_write_more(sl_t* slp)
-{
+static int do_write_more(sl_t* slp) {
     DWORD n = 0;
 #ifdef __WIN32__
     ErlIOVec vec;
 
     if ((n = driver_peekqv(slp->port, &vec)) > 0) {
-	if (slp->olen < n) {
-	    slp->obuf = driver_realloc(slp->obuf, n);
-	    slp->olen = n;
-	}
-	driver_vec_to_buf(&vec, slp->obuf, n);
-	driver_deq(slp->port, n);
-	n = do_write_buf(slp, slp->obuf, n);
+        if (slp->olen < n) {
+            slp->obuf = driver_realloc(slp->obuf, n);
+            slp->olen = n;
+        }
+        driver_vec_to_buf(&vec, slp->obuf, n);
+        driver_deq(slp->port, n);
+        n = do_write_buf(slp, slp->obuf, n);
     }
 #else
     SysIOVec* vector;
     int count;
 
     if ((vector = driver_peekq(slp->port, &count)) != NULL) {
-	int n = writev(slp->com, vector, count);
-	if (n > 0)
-	    driver_deq(slp->port, n);
-	if (driver_sizeq(slp->port) == 0)
-	    driver_select(slp->port,(ErlDrvEvent)slp->com, DO_WRITE, 0);
+        int n = writev(slp->com, vector, count);
+        if (n > 0)
+            driver_deq(slp->port, n);
+        if (driver_sizeq(slp->port) == 0)
+            driver_select(slp->port,(ErlDrvEvent)slp->com, DO_WRITE, 0);
     }
 #endif
     return n;
 }
 
 /* initiate a write operation */
-static int do_write_init(sl_t* slp, char* buf, int len)
-{
+static int do_write_init(sl_t* slp, char* buf, int len) {
     if (slp->com == INVALID)
-	return -1;
+        return -1;
     if (len == 0)
-	return 0;
+        return 0;
 
     if (slp->opending || (driver_sizeq(slp->port) > 0)) {
-	driver_enq(slp->port, buf, len);
-	return 0;
+        driver_enq(slp->port, buf, len);
+        return 0;
     }
 
 #ifdef __WIN32__
     if ((slp->obuf == NULL) || (slp->olen > len)) {
-	slp->obuf = driver_realloc(slp->obuf, len);
-	slp->olen = len;
+        slp->obuf = driver_realloc(slp->obuf, len);
+        slp->olen = len;
     }
     memcpy(slp->obuf, buf, len);
     return do_write_buf(slp, slp->obuf, len);
@@ -1022,68 +982,67 @@ static int do_write_init(sl_t* slp, char* buf, int len)
 }
 
 
-static int do_open(sl_t* slp)
-{
+static int do_open(sl_t* slp) {
     do_close(slp);
 
     if (slp->dev == NULL)
-	return -1;
-    
+        return -1;
+
 #ifdef __WIN32__
-    slp->com = CreateFile(slp->dev,  
-			  GENERIC_READ | GENERIC_WRITE, 
-			  0, 
-			  0, 
-			  OPEN_EXISTING,
-			  FILE_FLAG_OVERLAPPED,
-			  0);
+    slp->com = CreateFile(slp->dev,
+                          GENERIC_READ | GENERIC_WRITE,
+                          0,
+                          0,
+                          OPEN_EXISTING,
+                          FILE_FLAG_OVERLAPPED,
+                          0);
     if (slp->com == INVALID)
-	return -1;
+        return -1;
     slp->in.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     slp->out.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     slp->stat.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     {
-	DWORD mask;
-	SetCommMask(slp->com, EV_RXCHAR);
-	WaitCommEvent(slp->com, &mask, &slp->stat);
+        DWORD mask;
+        SetCommMask(slp->com, EV_RXCHAR);
+        WaitCommEvent(slp->com, &mask, &slp->stat);
     }
 #else
     slp->com = open(slp->dev, O_RDWR);
     if (slp->com == INVALID)
-	return -1;
+        return -1;
     fcntl(slp->com, F_SETFL, fcntl(slp->com, F_GETFL, 0) | O_NONBLOCK);
 #endif
     if (get_com_state(slp) < 0)
-	return -1;
+        return -1;
 
     /* setup default state if not set */
     if (!(slp->flags & FL_MODE)) {
-	slp->mode = SL_MODE_RAW;
-	slp->flags |= FL_MODE;
+        slp->mode = SL_MODE_RAW;
+        slp->flags |= FL_MODE;
     }
     if (!(slp->flags & FL_BAUD)) {
-	slp->baud = 9600;
-	slp->flags |= FL_BAUD;
+        slp->baud = 9600;
+        slp->flags |= FL_BAUD;
     }
     if (!(slp->flags & FL_PARITY)) {
-	slp->parity = 0;
-	slp->flags |= FL_PARITY;
+        slp->parity = 0;
+        slp->flags |= FL_PARITY;
     }
     if (!(slp->flags & FL_ECHO)) {
-	slp->echo = 0;
-	slp->flags |= FL_ECHO;
+        slp->echo = 0;
+        slp->flags |= FL_ECHO;
     }
     if (!(slp->flags & FL_CSIZE)) {
-	slp->csize = 8;
-	slp->flags |= FL_CSIZE;
+        slp->csize = 8;
+        slp->flags |= FL_CSIZE;
     }
     if (!(slp->flags & FL_HWFLOW)) {
-	slp->hwflow = 1;
-	slp->flags |= FL_HWFLOW;
+        slp->hwflow = 1;
+        slp->flags |= FL_HWFLOW;
     }
     if (!(slp->flags & FL_SWFLOW)) {
-	slp->swflow = 0;
-	slp->flags |= FL_SWFLOW;
+        slp->swflow = 0;
+        slp->flags |= FL_SWFLOW;
     }
     /* update pending changes */
     do_update(slp);
@@ -1091,42 +1050,39 @@ static int do_open(sl_t* slp)
 }
 
 
-static int do_hangup(sl_t* slp)
-{
+static int do_hangup(sl_t* slp) {
     if (slp->com == INVALID)
-	return -1;
+        return -1;
 #ifdef __WIN32__
     /* FIXME */
     return -1;
 #else
     {
-	struct termios t = slp->tio;
-	cfsetispeed(&t, B0);
-	cfsetospeed(&t, B0);
-	return tcsetattr(slp->com, TCSAFLUSH, &t);
+        struct termios t = slp->tio;
+        cfsetispeed(&t, B0);
+        cfsetospeed(&t, B0);
+        return tcsetattr(slp->com, TCSAFLUSH, &t);
     }
 #endif
 }
 
 
 /* general control reply function */
-static int ctl_reply(int rep, char* buf, int len, char** rbuf, int rsize)
-{
+static int ctl_reply(int rep, char* buf, int len, char** rbuf, int rsize) {
     char* ptr;
 
     if ((len+1) > rsize) {
-	ptr = driver_alloc(len+1);
-	*rbuf = ptr;
+        ptr = driver_alloc(len+1);
+        *rbuf = ptr;
     }
     else
-	ptr = *rbuf;
+        ptr = *rbuf;
     *ptr++ = rep;
     memcpy(ptr, buf, len);
     return len+1;
 }
 
-static int ctl_reply_int(int rep, char** rbuf, int rsize)
-{
+static int ctl_reply_int(int rep, char** rbuf, int rsize) {
     char buf[5];
     buf[0] = SL_INT;
     put_int32(rep, buf+1);
@@ -1134,8 +1090,7 @@ static int ctl_reply_int(int rep, char** rbuf, int rsize)
 }
 
 
-static int ctl_reply_bool(int rep, char** rbuf, int rsize)
-{
+static int ctl_reply_bool(int rep, char** rbuf, int rsize) {
     char buf[2];
     buf[0] = SL_BOOL;
     buf[1] = rep ? 1 : 0;
@@ -1143,12 +1098,11 @@ static int ctl_reply_bool(int rep, char** rbuf, int rsize)
 }
 
 /* general control error reply function */
-static int ctl_error(int err, char** rbuf, int rsize)
-{
-    char response[256];		/* Response buffer. */
+static int ctl_error(int err, char** rbuf, int rsize) {
+    char response[256];                /* Response buffer. */
     char* s;
     char* t;
-    
+
     switch(err) {
     case SL_ERR_OK: s = ""; break;
     case SL_ERR_BADARG: s = "badarg"; break;
@@ -1158,30 +1112,28 @@ static int ctl_error(int err, char** rbuf, int rsize)
     default:  s = "unknown"; break;
     }
     for (t = response; *s; s++, t++)
-	*t = tolower(*s);
+        *t = tolower(*s);
     return ctl_reply(SL_ERROR, response, t-response, rbuf, rsize);
 }
 
-static int ctl_reply_string(char* str, char** rbuf, int rsize)
-{
+static int ctl_reply_string(char* str, char** rbuf, int rsize) {
     char buf[1025];
     int n = strlen(str);
 
     if (n >= 1024)
-	return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        return ctl_error(SL_ERR_BADARG, rbuf, rsize);
     buf[0] = SL_STRING;
     memcpy(buf+1, str, n);
     return ctl_reply(SL_OK, buf, n+1, rbuf, rsize);
 }
 
 
-static ErlDrvData sl_start(ErlDrvPort port, char *buf)
-{
+static ErlDrvData sl_start(ErlDrvPort port, char *buf) {
     sl_t *slp = (sl_t*) driver_alloc(sizeof (sl_t));
     struct termios* tp;
 
-    if (slp == NULL) 
-	return (ErlDrvData) -1;
+    if (slp == NULL)
+        return (ErlDrvData) -1;
     slp->port = port;
     slp->com   = INVALID;
     slp->dev  = NULL;
@@ -1205,74 +1157,70 @@ static ErlDrvData sl_start(ErlDrvPort port, char *buf)
 }
 
 
-static void sl_stop(ErlDrvData data)
-{
+static void sl_stop(ErlDrvData data) {
     sl_t* slp = (sl_t*) data;
 
     do_close(slp);
 
     if (slp->ibuf != NULL)
-	driver_free(slp->ibuf);
+        driver_free(slp->ibuf);
     if (slp->obuf != NULL)
-	driver_free(slp->obuf);
+        driver_free(slp->obuf);
     driver_free(slp);
 }
 
 
-static void sl_output(ErlDrvData data,  char* buf, int len)
-{
+static void sl_output(ErlDrvData data,  char* buf, int len) {
     sl_t* slp = (sl_t*) data;
 
     DEBUGF("sl_output: qsize=%d", driver_sizeq(slp->port));
 
-    do_write_init(slp, buf, len);    
+    do_write_init(slp, buf, len);
 }
 
-static void sl_ready_input(ErlDrvData data, ErlDrvEvent event)
-{
+static void sl_ready_input(ErlDrvData data, ErlDrvEvent event) {
     sl_t* slp = (sl_t*) data;
     DWORD n;
 
 #ifdef __WIN32__
     if (event == slp->out.hEvent)
-	sl_ready_output(data, event);
+        sl_ready_output(data, event);
     else if (event == slp->stat.hEvent) {
-	/* Manually reset the event? */
-	if (do_read(slp) > 0)
-	    WaitCommEvent(slp->com, &mask, &slp->stat);
+        /* Manually reset the event? */
+        if (do_read(slp) > 0)
+            WaitCommEvent(slp->com, &mask, &slp->stat);
     }
     else if (event == slp->in.hEvent) {
-	if (!GetOverlappedResult(slp->com, &slp->in, &n, FALSE)) {
-	    /* how can we handle this error? */
-	    return;
-	}
-	else {
-	    driver_ouput(slp->port, slp->ibuf, n);
-	}
+        if (!GetOverlappedResult(slp->com, &slp->in, &n, FALSE)) {
+            /* how can we handle this error? */
+            return;
+        }
+        else {
+            driver_ouput(slp->port, slp->ibuf, n);
+        }
     }
 #else
     if ((slp->ibuf == NULL) || (slp->bufsz > slp->ilen)) {
-	slp->ibuf = driver_realloc(slp->ibuf, slp->bufsz);
-	slp->ilen = slp->bufsz;
+        slp->ibuf = driver_realloc(slp->ibuf, slp->bufsz);
+        slp->ilen = slp->bufsz;
     }
     if ((n = read(slp->com, slp->ibuf, slp->bufsz)) > 0)
-	driver_output(slp->port, slp->ibuf, n);
+        driver_output(slp->port, slp->ibuf, n);
 #endif
 }
 
 
-static void sl_ready_output(ErlDrvData data, ErlDrvEvent event)
-{
+static void sl_ready_output(ErlDrvData data, ErlDrvEvent event) {
     sl_t* slp = (sl_t*) data;
 
     DEBUGF("sl_ready_output: qsize=%d", driver_sizeq(slp->port));
-    
+
 #ifdef __WIN32__
     slp->opending = 0;
     driver_select(slp->port, (ErlDrvEvent)slp->out.hEvent,DO_READ,0);
     if (!GetOverlappedResult(slp->com, &slp->out, &n, FALSE)) {
-	/* Output error */
-	return;
+        /* Output error */
+        return;
     }
 #endif
     do_write_more(slp);
@@ -1280,323 +1228,321 @@ static void sl_ready_output(ErlDrvData data, ErlDrvEvent event)
 
 
 static int sl_ctl(ErlDrvData data, unsigned int cmd, char* buf, int len, 
-	      char** rbuf, int rsize)
-{
+              char** rbuf, int rsize) {
     sl_t* slp = (sl_t*) data;
-    
+
     switch(cmd) {
     case SL_SET_DEV: /* set device name */
-	if (slp->dev != NULL)
-	    driver_free(slp->dev);
-	slp->dev = NULL;
-	if (len > 0) {
-	    if ((slp->dev = driver_alloc(len + 1)) == NULL)
-		return ctl_error(SL_ERR_NOMEM, rbuf, rsize);
-	    memcpy(slp->dev, buf, len);
-	    slp->dev[len] = '\0';
-	}
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
+        if (slp->dev != NULL)
+            driver_free(slp->dev);
+        slp->dev = NULL;
+        if (len > 0) {
+            if ((slp->dev = driver_alloc(len + 1)) == NULL)
+                return ctl_error(SL_ERR_NOMEM, rbuf, rsize);
+            memcpy(slp->dev, buf, len);
+            slp->dev[len] = '\0';
+        }
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_GET_DEV: /* get device name */
-	if (slp->dev == NULL)
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
-	return ctl_reply_string(slp->dev, rbuf, rsize);
-	
+        if (slp->dev == NULL)
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        return ctl_reply_string(slp->dev, rbuf, rsize);
+
 
     case SL_SET_BAUD: /* set baud rate */
-	if (len != 4)
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
-	slp->baud = get_int32(buf);
-	slp->flags |= FL_BAUD;
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
+        if (len != 4)
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        slp->baud = get_int32(buf);
+        slp->flags |= FL_BAUD;
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_GET_BAUD: /* get baud rate */
-	if (slp->flags & FL_BAUD) { /* pending */
-	    /* fprintf(stderr, "pending baud=%d\r\n", slp->baud);*/
-	    return ctl_reply_int(slp->baud, rbuf, rsize);
-	}
-	if (slp->com != INVALID) {
-	    int baud = get_baud(slp);
-	    /* fprintf(stderr, "baud = %d\r\n", baud);*/
-	    return ctl_reply_int(baud, rbuf, rsize);
-	}
-	else
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        if (slp->flags & FL_BAUD) { /* pending */
+            /* fprintf(stderr, "pending baud=%d\r\n", slp->baud);*/
+            return ctl_reply_int(slp->baud, rbuf, rsize);
+        }
+        if (slp->com != INVALID) {
+            int baud = get_baud(slp);
+            /* fprintf(stderr, "baud = %d\r\n", baud);*/
+            return ctl_reply_int(baud, rbuf, rsize);
+        }
+        else
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
 
     case SL_SET_CSIZE:
-	if (len != 4) /* set number of data bits */
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
-	slp->csize = get_int32(buf);
-	slp->flags |= FL_CSIZE;
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
+        if (len != 4) /* set number of data bits */
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        slp->csize = get_int32(buf);
+        slp->flags |= FL_CSIZE;
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_GET_CSIZE:
-	if (slp->flags & FL_CSIZE) /* pending */
-	    return ctl_reply_int(slp->csize, rbuf, rsize);
-	else if (slp->com != INVALID)
-	    return ctl_reply_int(get_csize(slp), rbuf, rsize);
-	else
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        if (slp->flags & FL_CSIZE) /* pending */
+            return ctl_reply_int(slp->csize, rbuf, rsize);
+        else if (slp->com != INVALID)
+            return ctl_reply_int(get_csize(slp), rbuf, rsize);
+        else
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
 
     case SL_SET_BUFSZ:
-	if (len != 4) /* set number of bytes to buffer */
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
-	if ((slp->bufsz = get_int32(buf)) < 1)
-	    slp->bufsz = 1;
-	else if (slp->bufsz > 255)
-	    slp->bufsz = 255;
-	slp->flags |= FL_BUFSZ;
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
+        if (len != 4) /* set number of bytes to buffer */
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        if ((slp->bufsz = get_int32(buf)) < 1)
+            slp->bufsz = 1;
+        else if (slp->bufsz > 255)
+            slp->bufsz = 255;
+        slp->flags |= FL_BUFSZ;
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_GET_BUFSZ:
-	if (slp->flags & FL_BUFSZ)
-	    return ctl_reply_int(slp->bufsz, rbuf, rsize);
-	else if (slp->com != INVALID)
-	    return ctl_reply_int(get_bufsz(slp), rbuf, rsize);
-	else
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        if (slp->flags & FL_BUFSZ)
+            return ctl_reply_int(slp->bufsz, rbuf, rsize);
+        else if (slp->com != INVALID)
+            return ctl_reply_int(get_bufsz(slp), rbuf, rsize);
+        else
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
 
     case SL_SET_BUFTM:
-	if (len != 4) /* set buffer timeout */
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
-	slp->buftm = get_int32(buf);
-	slp->flags |= FL_BUFTM;
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
+        if (len != 4) /* set buffer timeout */
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        slp->buftm = get_int32(buf);
+        slp->flags |= FL_BUFTM;
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_GET_BUFTM:
-	if (slp->flags & FL_BUFTM)
-	    return ctl_reply_int(slp->buftm, rbuf, rsize);
-	else if (slp->com != INVALID)
-	    return ctl_reply_int(get_buftm(slp), rbuf, rsize);
-	else
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        if (slp->flags & FL_BUFTM)
+            return ctl_reply_int(slp->buftm, rbuf, rsize);
+        else if (slp->com != INVALID)
+            return ctl_reply_int(get_buftm(slp), rbuf, rsize);
+        else
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
 
     case SL_SET_STOPB:
-	if (len != 4) /* set buffer timeout */
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
-	slp->stopb = get_int32(buf);
-	slp->flags |= FL_STOPB;
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);	
+        if (len != 4) /* set buffer timeout */
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        slp->stopb = get_int32(buf);
+        slp->flags |= FL_STOPB;
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_GET_STOPB:
-	if (slp->flags & FL_STOPB)
-	    return ctl_reply_int(slp->stopb, rbuf, rsize);
-	else if (slp->com != INVALID)
-	    return ctl_reply_int(get_stopb(slp), rbuf, rsize);
-	else
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        if (slp->flags & FL_STOPB)
+            return ctl_reply_int(slp->stopb, rbuf, rsize);
+        else if (slp->com != INVALID)
+            return ctl_reply_int(get_stopb(slp), rbuf, rsize);
+        else
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
 
     case SL_SET_PARITY:
-	if (len != 4)
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
-	slp->parity = get_int32(buf);
-	slp->flags |= FL_PARITY;
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
+        if (len != 4)
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        slp->parity = get_int32(buf);
+        slp->flags |= FL_PARITY;
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_GET_PARITY:
-	if (slp->flags & FL_PARITY)
-	    return ctl_reply_int(slp->parity, rbuf, rsize);
-	else if (slp->com != INVALID) 
-	    return ctl_reply_int(get_parity(slp), rbuf, rsize);
-	else
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        if (slp->flags & FL_PARITY)
+            return ctl_reply_int(slp->parity, rbuf, rsize);
+        else if (slp->com != INVALID)
+            return ctl_reply_int(get_parity(slp), rbuf, rsize);
+        else
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
 
     case SL_SET_HWFLOW:
-	if (len != 4)
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
-	slp->hwflow = get_int32(buf);	
-	slp->flags |= FL_HWFLOW;
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
+        if (len != 4)
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        slp->hwflow = get_int32(buf);
+        slp->flags |= FL_HWFLOW;
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_GET_HWFLOW:
-	if (slp->flags & FL_HWFLOW)
-	    return ctl_reply_bool(slp->hwflow, rbuf, rsize);
-	else if (slp->com != INVALID)
-	    return ctl_reply_bool(get_hwflow(slp), rbuf, rsize);
-	else
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        if (slp->flags & FL_HWFLOW)
+            return ctl_reply_bool(slp->hwflow, rbuf, rsize);
+        else if (slp->com != INVALID)
+            return ctl_reply_bool(get_hwflow(slp), rbuf, rsize);
+        else
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
 
     case SL_SET_SWFLOW:
-	if (len != 4)
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
-	slp->swflow = get_int32(buf);	
-	slp->flags |= FL_SWFLOW;
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
+        if (len != 4)
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        slp->swflow = get_int32(buf);
+        slp->flags |= FL_SWFLOW;
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_GET_SWFLOW:
-	if (slp->flags & FL_SWFLOW)
-	    return ctl_reply_bool(slp->swflow, rbuf, rsize);
-	else if (slp->com != INVALID)
-	    return ctl_reply_bool(get_swflow(slp), rbuf, rsize);
-	else
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        if (slp->flags & FL_SWFLOW)
+            return ctl_reply_bool(slp->swflow, rbuf, rsize);
+        else if (slp->com != INVALID)
+            return ctl_reply_bool(get_swflow(slp), rbuf, rsize);
+        else
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
 
     case SL_SET_XONCHAR:
-	if (len != 4)
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
-	slp->xonchar = get_int32(buf);	
-	slp->flags |= FL_XONCHAR;
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
+        if (len != 4)
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        slp->xonchar = get_int32(buf);
+        slp->flags |= FL_XONCHAR;
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_GET_XONCHAR:
-	if (slp->flags & FL_XONCHAR)
-	    return ctl_reply_int(slp->xonchar, rbuf, rsize);
-	else if (slp->com != INVALID)
-	    return ctl_reply_int(get_xonchar(slp), rbuf, rsize);
-	else
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        if (slp->flags & FL_XONCHAR)
+            return ctl_reply_int(slp->xonchar, rbuf, rsize);
+        else if (slp->com != INVALID)
+            return ctl_reply_int(get_xonchar(slp), rbuf, rsize);
+        else
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
 
     case SL_SET_XOFFCHAR:
-	if (len != 4)
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
-	slp->xoffchar = get_int32(buf);	
-	slp->flags |= FL_XOFFCHAR;
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
+        if (len != 4)
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        slp->xoffchar = get_int32(buf);
+        slp->flags |= FL_XOFFCHAR;
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_GET_XOFFCHAR:
-	if (slp->flags & FL_XOFFCHAR)
-	    return ctl_reply_int(slp->xoffchar, rbuf, rsize);
-	else if (slp->com != INVALID)
-	    return ctl_reply_int(get_xoffchar(slp), rbuf, rsize);
-	else
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        if (slp->flags & FL_XOFFCHAR)
+            return ctl_reply_int(slp->xoffchar, rbuf, rsize);
+        else if (slp->com != INVALID)
+            return ctl_reply_int(get_xoffchar(slp), rbuf, rsize);
+        else
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
 
 
     case SL_SET_EOLCHAR:
-	if (len != 4)
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
-	slp->eolchar = get_int32(buf);	
-	slp->flags |= FL_EOLCHAR;
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
+        if (len != 4)
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        slp->eolchar = get_int32(buf);
+        slp->flags |= FL_EOLCHAR;
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_GET_EOLCHAR:
-	if (slp->flags & FL_EOLCHAR)
-	    return ctl_reply_int(slp->eolchar, rbuf, rsize);
-	else if (slp->com != INVALID)
-	    return ctl_reply_int(get_eolchar(slp), rbuf, rsize);
-	else
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        if (slp->flags & FL_EOLCHAR)
+            return ctl_reply_int(slp->eolchar, rbuf, rsize);
+        else if (slp->com != INVALID)
+            return ctl_reply_int(get_eolchar(slp), rbuf, rsize);
+        else
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
 
     case SL_SET_EOL2CHAR:
-	if (len != 4)
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
-	slp->eol2char = get_int32(buf);	
-	slp->flags |= FL_EOL2CHAR;
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
+        if (len != 4)
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        slp->eol2char = get_int32(buf);
+        slp->flags |= FL_EOL2CHAR;
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_GET_EOL2CHAR:
-	if (slp->flags & FL_EOL2CHAR)
-	    return ctl_reply_int(slp->eol2char, rbuf, rsize);
-	else if (slp->com != INVALID)
-	    return ctl_reply_int(get_eol2char(slp), rbuf, rsize);
-	else
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        if (slp->flags & FL_EOL2CHAR)
+            return ctl_reply_int(slp->eol2char, rbuf, rsize);
+        else if (slp->com != INVALID)
+            return ctl_reply_int(get_eol2char(slp), rbuf, rsize);
+        else
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
 
     case SL_SET_ECHO:
-	if (len != 4)
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
-	slp->echo = get_int32(buf);	
-	slp->flags |= FL_ECHO;
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
+        if (len != 4)
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        slp->echo = get_int32(buf);
+        slp->flags |= FL_ECHO;
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_GET_ECHO:
-	if (slp->flags & FL_ECHO)
-	    return ctl_reply_bool(slp->echo, rbuf, rsize);
-	else if (slp->com != INVALID)
-	    return ctl_reply_bool(get_echo(slp), rbuf, rsize);
-	else
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        if (slp->flags & FL_ECHO)
+            return ctl_reply_bool(slp->echo, rbuf, rsize);
+        else if (slp->com != INVALID)
+            return ctl_reply_bool(get_echo(slp), rbuf, rsize);
+        else
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
 
     case SL_SET_MODE:
-	if (len != 4)
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
-	else {
-	    int mode = get_int32(buf);
-	    if (mode != slp->mode) {
-		if (mode == SL_MODE_RAW)
-		    slp->mode = SL_MODE_RAW;
-		else if (mode == SL_MODE_LINE)
-		    slp->mode = SL_MODE_LINE;
-		else
-		    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
-		slp->flags |= FL_MODE;
-	    }
-	    return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
-	}
+        if (len != 4)
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        else {
+            int mode = get_int32(buf);
+            if (mode != slp->mode) {
+                if (mode == SL_MODE_RAW)
+                    slp->mode = SL_MODE_RAW;
+                else if (mode == SL_MODE_LINE)
+                    slp->mode = SL_MODE_LINE;
+                else
+                    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+                slp->flags |= FL_MODE;
+            }
+            return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
+        }
 
     case SL_GET_MODE:
-	if (slp->flags & FL_MODE)
-	    return ctl_reply_int(slp->mode, rbuf, rsize);
-	else if (slp->com != INVALID)
-	    return ctl_reply_int(slp->cmode, rbuf, rsize);
-	else
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
-	
+        if (slp->flags & FL_MODE)
+            return ctl_reply_int(slp->mode, rbuf, rsize);
+        else if (slp->com != INVALID)
+            return ctl_reply_int(slp->cmode, rbuf, rsize);
+        else
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+
 
     case SL_CONNECT:
     case SL_OPEN:
-	if (slp->dev == NULL) /* MUST set device first */
-	    return ctl_error(SL_ERR_BADARG, rbuf, rsize);
-	if (do_open(slp) < 0)
-	    return ctl_error(SL_ERR_ACCESS, rbuf, rsize);
-	/* For win32 we could? create a ComEvent handle */
+        if (slp->dev == NULL) /* MUST set device first */
+            return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        if (do_open(slp) < 0)
+            return ctl_error(SL_ERR_ACCESS, rbuf, rsize);
+        /* For win32 we could? create a ComEvent handle */
 #ifdef __WIN32__
-	driver_select(slp->port,(ErlDrvEvent)slp->stat.hEvent,DO_READ,1);
+        driver_select(slp->port,(ErlDrvEvent)slp->stat.hEvent,DO_READ,1);
 #else
-	driver_select(slp->port,(ErlDrvEvent)slp->com, DO_READ, 1);
+        driver_select(slp->port,(ErlDrvEvent)slp->com, DO_READ, 1);
 #endif
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_DISCONNECT:
-	do_hangup(slp);
-	/* fall through */
+        do_hangup(slp);
+        /* fall through */
     case SL_CLOSE:
-	do_close(slp);
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
+        do_close(slp);
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_XOFF:
-	do_send_xoff(slp);
+        do_send_xoff(slp);
 
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);	
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_XON:
-	/* send xon */
-	do_send_xon(slp);
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);	
+        /* send xon */
+        do_send_xon(slp);
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_BREAK:
-	/* send break */
-	do_send_break(slp);
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);	
+        /* send break */
+        do_send_break(slp);
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_UPDATE:
-	do_update(slp);
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
+        do_update(slp);
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_REVERT:
-	slp->flags = 0;
-	return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
+        slp->flags = 0;
+        return ctl_reply(SL_OK, NULL, 0, rbuf, rsize);
 
     case SL_GET_RATES: {
-	char rates[1+sizeof(int)*((sizeof(rtab)/sizeof(struct _rate))-1)];
-	char* ptr = rates+1;
-	int i = 0;
-	
-	rates[0] = SL_INT;
-	while(rtab[i].baud != -1) {
-	    put_int32(rtab[i].baud, ptr);
-	    ptr += sizeof(int);
-	    i++;
-	}
-	return ctl_reply(SL_OK, rates, sizeof(rates), rbuf, rsize);
+        char rates[1+sizeof(int)*((sizeof(rtab)/sizeof(struct _rate))-1)];
+        char* ptr = rates+1;
+        int i = 0;
+
+        rates[0] = SL_INT;
+        while(rtab[i].baud != -1) {
+            put_int32(rtab[i].baud, ptr);
+            ptr += sizeof(int);
+            i++;
+        }
+        return ctl_reply(SL_OK, rates, sizeof(rates), rbuf, rsize);
     }
     default:
-	return ctl_error(SL_ERR_BADARG, rbuf, rsize);
+        return ctl_error(SL_ERR_BADARG, rbuf, rsize);
     }
 }
-	
-DRIVER_INIT(sl_drv)
-{
+
+DRIVER_INIT(sl_drv) {
     sl_entry.init         = NULL;   /* Not used */
     sl_entry.start        = sl_start;
     sl_entry.stop         = sl_stop;
